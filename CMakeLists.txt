@@ -11,53 +11,39 @@ set(
   CACHE STRING "Default cache server"
 )
 
-include("tools/gate/cmake/HunterGate.cmake")
+include("cmake/HunterGate.cmake")
 
 HunterGate(
   URL "https://github.com/cpp-pm/hunter/archive/v0.23.218.tar.gz"
   SHA1 "9a3594a61227967fb92159339ba326701b287b19"
 )
 
+project(builder)
 
-# TODO: rename project and delete this comment
-project(template)
-string(APPEND CMAKE_CXX_FLAGS " -pedantic -Werror -Wall -Wextra")
-string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-command-line-argument")
-string(APPEND CMAKE_CXX_FLAGS " -Wshadow -Wnon-virtual-dtor")
+hunter_add_package(Boost COMPONENTS program_options filesystem system regex)
+hunter_add_package(Async++)
+#hunter_add_package(BoostProcess)
+find_package(Async++ CONFIG REQUIRED)
+#find_package(BoostProcess CONFIG REQUIRED)
+find_package(Boost CONFIG REQUIRED program_options filesystem system regex)
 
-hunter_add_package(GTest)
-find_package(GTest CONFIG REQUIRED)
-
-# TODO: change template word to project name and delete this comment
-add_library(template STATIC
-  # enum your files and delete this comment
-  ${CMAKE_CURRENT_SOURCE_DIR}/sources/source.cpp
+add_library(builder STATIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/sources/builder.cpp
 )
-add_executable(tests
-  # TODO: enum your files and delete this comment
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test.cpp
+add_library(process INTERFACE
+)
+add_executable(main
+  ${CMAKE_CURRENT_SOURCE_DIR}/sources/main.cpp
 )
 
-# TODO: change template word to project name and delete this comment
-target_include_directories(template 
+target_include_directories(process
+  INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/process/include
+)
+target_include_directories(builder
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
-target_include_directories(tests 
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-# TODO: change template word to project name and delete this comment
-target_link_libraries(tests GTest::main template)
 
-enable_testing()
-add_test(NAME unit_tests COMMAND tests) 
+target_link_libraries(builder process Async++::Async++
+            Boost::program_options Boost::filesystem Boost::system Boost::regex)
 
-if(BUILD_COVERAGE)
-  set(ENABLE_COVERAGE ON CACHE BOOL "Enable coverage build." FORCE)
-  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-  find_package(codecov)
-  # TODO: change template word to project name and delete this comment
-  add_coverage(template)
-  add_coverage(tests)
-  list(APPEND LCOV_REMOVE_PATTERNS "'${PROJECT_SOURCE_DIR}/tests/*'")
-  coverage_evaluate()
-endif()
+target_link_libraries(main builder)

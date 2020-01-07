@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+_builds/*
+_build/*
+process/*
